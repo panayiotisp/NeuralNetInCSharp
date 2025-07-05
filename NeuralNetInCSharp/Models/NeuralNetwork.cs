@@ -31,7 +31,7 @@ namespace NeuralNetInCSharp.Models {
         /// <param name="learningRate">How big each weight update step is (default is 0.1).</param>
         public NeuralNetwork(int inputCount, int[] hiddenLayers, int outputCount,
                              IActivationFunction hiddenActivation,
-                             IActivationFunction outputActivation = null,
+                             IActivationFunction? outputActivation = null,
                              double learningRate = 0.1) {
             LearningRate = learningRate;
 
