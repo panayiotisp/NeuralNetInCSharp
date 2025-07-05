@@ -82,7 +82,7 @@ namespace NeuralNetInCSharp.Models {
                 layerInputs.Add(act);
             }
 
-            // 2. Work backwards: compute errors and update everything
+            // 2. Work backwards: compute deltas
             for (int l = NetworkLayers.Length - 1; l >= 0; l--) {
                 Layer layer = NetworkLayers[l];
                 double[] errors = new double[layer.Neurons.Length];
