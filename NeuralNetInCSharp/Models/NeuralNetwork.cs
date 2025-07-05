@@ -12,7 +12,7 @@ namespace NeuralNetInCSharp.Models {
         /// <summary>
         /// The layers of the network, each with its own set of neurons(perceptrons).
         /// </summary>
-        private readonly Layer[] NetowkrLayers;
+        private readonly Layer[] NetworkLayers;
 
         /// <summary>
         /// how big each weight update step is
@@ -26,19 +26,25 @@ namespace NeuralNetInCSharp.Models {
         /// <param name="inputCount">How many input features each example has.</param>
         /// <param name="hiddenLayers">An array of hidden-layer sizes (e.g. new[] { 2, 3 } makes a 2-neuron layer then a 3-neuron layer).</param>
         /// <param name="outputCount">How many outputs the network should produce.</param>
-        /// <param name="activation">The activation function every neuron will use.</param>
+        /// <param name="hiddenActivation">The activation function for hidden layers.</param>
+        /// <param name="outputActivation">The activation function for the output layer. If null, <paramref name="hiddenActivation"/> is used.</param>
         /// <param name="learningRate">How big each weight update step is (default is 0.1).</param>
         public NeuralNetwork(int inputCount, int[] hiddenLayers, int outputCount,
-                             IActivationFunction activation, double learningRate = 0.1) {
+                             IActivationFunction hiddenActivation,
+                             IActivationFunction? outputActivation = null,
+                             double learningRate = 0.1) {
             LearningRate = learningRate;
 
             // Build a list [ inputCount, ...hidden..., outputCount ]
             List<int> sizes = [inputCount, .. hiddenLayers, outputCount];
 
             // Create each layer
-            NetowkrLayers = new Layer[sizes.Count - 1];
-            for (int i = 0; i < NetowkrLayers.Length; i++) {
-                NetowkrLayers[i] = new Layer(sizes[i], sizes[i + 1], activation);
+            NetworkLayers = new Layer[sizes.Count - 1];
+            for (int i = 0; i < NetworkLayers.Length; i++) {
+                IActivationFunction act = i == NetworkLayers.Length - 1
+                    ? outputActivation ?? hiddenActivation
+                    : hiddenActivation;
+                NetworkLayers[i] = new Layer(sizes[i], sizes[i + 1], act);
             }
         }
         #endregion
@@ -51,7 +57,7 @@ namespace NeuralNetInCSharp.Models {
         /// <returns>The final activations from the output layer. </returns>
         public double[] FeedForward(double[] inputs) {
             double[] activations = inputs;
-            foreach (Layer layer in NetowkrLayers) {
+            foreach (Layer layer in NetworkLayers) {
                 activations = layer.Compute(activations);
             }
 
@@ -67,28 +73,26 @@ namespace NeuralNetInCSharp.Models {
         /// <param name="targets">The desired outputs for this training example.</param>
         public void BackPropagate(double[] inputs, double[] targets) {
             // 1. Forward pass but remember each layer’s outputs
-            List<double[]> layerInputs = [inputs];
             List<double[]> layerOutputs = [];
             double[] act = inputs;
-            foreach (Layer layer in NetowkrLayers) {
+            foreach (Layer layer in NetworkLayers) {
                 act = layer.Compute(act);
                 layerOutputs.Add(act);
-                layerInputs.Add(act);
             }
 
-            // 2. Work backwards: compute errors and update everything
-            for (int l = NetowkrLayers.Length - 1; l >= 0; l--) {
-                Layer layer = NetowkrLayers[l];
+            // 2. Work backwards: compute deltas
+            for (int l = NetworkLayers.Length - 1; l >= 0; l--) {
+                Layer layer = NetworkLayers[l];
                 double[] errors = new double[layer.Neurons.Length];
 
-                if (l == NetowkrLayers.Length - 1) {
+                if (l == NetworkLayers.Length - 1) {
                     // output layer: error = target − actual
                     for (int j = 0; j < layer.Neurons.Length; j++) {
                         errors[j] = targets[j] - layerOutputs[l][j];
                     }
                 } else {
                     // hidden layer: error = sum of next-layer (weight × delta)
-                    Layer next = NetowkrLayers[l + 1];
+                    Layer next = NetworkLayers[l + 1];
                     for (int j = 0; j < layer.Neurons.Length; j++) {
                         double e = 0;
                         for (int k = 0; k < next.Neurons.Length; k++) {
@@ -99,23 +103,24 @@ namespace NeuralNetInCSharp.Models {
                     }
                 }
 
-                // Update deltas, weights, and biases
                 for (int j = 0; j < layer.Neurons.Length; j++) {
                     PerceptronNeuron neuron = layer.Neurons[j];
                     double outputVal = layerOutputs[l][j];
                     neuron.Delta = errors[j] * neuron.ActivationInstance.Derivative(outputVal);
+                }
+            }
 
-                    // grab the inputs that went into this layer
-                    double[] prevActivations = l == 0
-                        ? inputs
-                        : layerOutputs[l - 1];
+            // 3. Apply updates using the computed deltas
+            for (int l = 0; l < NetworkLayers.Length; l++) {
+                Layer layer = NetworkLayers[l];
+                double[] prevActivations = l == 0
+                    ? inputs
+                    : layerOutputs[l - 1];
 
-                    // tweak each weight
+                foreach (PerceptronNeuron neuron in layer.Neurons) {
                     for (int w = 0; w < neuron.Weights.Length; w++) {
                         neuron.Weights[w] += LearningRate * neuron.Delta * prevActivations[w];
                     }
-
-                    // tweak the bias
                     neuron.Bias += LearningRate * neuron.Delta;
                 }
             }
@@ -152,3 +157,4 @@ namespace NeuralNetInCSharp.Models {
     } // class: NeuralNetwork
 
 } // namespace: NeuralNetInCSharp.Models
+
