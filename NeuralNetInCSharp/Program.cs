@@ -18,16 +18,19 @@ namespace NeuralNetInCSharp {
             int[] hiddenLayers = [2];   // one hidden layer with 2 neurons
             int outputCount = 1;
             int epochs = 10000;
-            double learningRate = 0.1;
+            double learningRate = 0.01;
 
-            // Pick an activation function
-            IActivationFunction activation = new Sigmoid();
+            // Use a linear activation in the hidden layer as well as the output
+            // layer so the network can learn an unbounded function like y = 2x
+            IActivationFunction hiddenActivation = new Linear();
+            IActivationFunction outputActivation = new Linear();
 
             // Build it
             var net = new NeuralNetwork(inputCount: inputCount,
                                         hiddenLayers: hiddenLayers,
                                         outputCount: outputCount,
-                                        activation: activation,
+                                        hiddenActivation: hiddenActivation,
+                                        outputActivation: outputActivation,
                                         learningRate: learningRate);
 
             // Make some training data for y = 2x
