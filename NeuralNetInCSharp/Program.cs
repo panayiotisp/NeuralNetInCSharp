@@ -20,8 +20,9 @@ namespace NeuralNetInCSharp {
             int epochs = 10000;
             double learningRate = 0.01;
 
-            // Pick an activation function
-            IActivationFunction hiddenActivation = new Linear();
+            // Use a sigmoid in the hidden layer but keep the output linear so
+            // predictions aren't squashed to the range (0,1)
+            IActivationFunction hiddenActivation = new Sigmoid();
             IActivationFunction outputActivation = new Linear();
 
             // Build it
