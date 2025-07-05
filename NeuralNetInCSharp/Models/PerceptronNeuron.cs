@@ -38,7 +38,7 @@ namespace NeuralNetInCSharp.Models {
         /// <summary>
         /// The activation function to apply to the weighted sum of inputs.
         /// </summary>
-        private readonly IActivationFunction ActivationInstance;
+        public IActivationFunction ActivationInstance { get; private set; }
 
         /// <summary>
         /// Random number generator used to initialize weights and bias.
