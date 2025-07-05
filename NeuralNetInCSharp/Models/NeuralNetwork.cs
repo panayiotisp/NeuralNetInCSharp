@@ -73,13 +73,11 @@ namespace NeuralNetInCSharp.Models {
         /// <param name="targets">The desired outputs for this training example.</param>
         public void BackPropagate(double[] inputs, double[] targets) {
             // 1. Forward pass but remember each layer’s outputs
-            List<double[]> layerInputs = [inputs];
             List<double[]> layerOutputs = [];
             double[] act = inputs;
             foreach (Layer layer in NetworkLayers) {
                 act = layer.Compute(act);
                 layerOutputs.Add(act);
-                layerInputs.Add(act);
             }
 
             // 2. Work backwards: compute deltas
@@ -105,23 +103,24 @@ namespace NeuralNetInCSharp.Models {
                     }
                 }
 
-                // Update deltas, weights, and biases
                 for (int j = 0; j < layer.Neurons.Length; j++) {
                     PerceptronNeuron neuron = layer.Neurons[j];
                     double outputVal = layerOutputs[l][j];
                     neuron.Delta = errors[j] * neuron.ActivationInstance.Derivative(outputVal);
+                }
+            }
 
-                    // grab the inputs that went into this layer
-                    double[] prevActivations = l == 0
-                        ? inputs
-                        : layerOutputs[l - 1];
+            // 3. Apply updates using the computed deltas
+            for (int l = 0; l < NetworkLayers.Length; l++) {
+                Layer layer = NetworkLayers[l];
+                double[] prevActivations = l == 0
+                    ? inputs
+                    : layerOutputs[l - 1];
 
-                    // tweak each weight
+                foreach (PerceptronNeuron neuron in layer.Neurons) {
                     for (int w = 0; w < neuron.Weights.Length; w++) {
                         neuron.Weights[w] += LearningRate * neuron.Delta * prevActivations[w];
                     }
-
-                    // tweak the bias
                     neuron.Bias += LearningRate * neuron.Delta;
                 }
             }
@@ -158,3 +157,4 @@ namespace NeuralNetInCSharp.Models {
     } // class: NeuralNetwork
 
 } // namespace: NeuralNetInCSharp.Models
+
